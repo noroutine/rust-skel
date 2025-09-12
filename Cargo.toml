@@ -1,0 +1,28 @@
+[package]
+name = "rust-skel"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bytes = "1.10.1"
+console-subscriber = "0.4.1"
+opentelemetry = "0.30.0"
+opentelemetry-otlp = { version = "0.30.0", features = [
+  "http-proto",
+  "reqwest",
+  "tokio",
+  "grpc-tonic",
+] }
+opentelemetry_sdk = "0.30.0"
+rand = "0.9.2"
+tokio = { version = "1.47.1", features = ["full", "tracing"] }
+tracing = "0.1.41"
+tracing-opentelemetry = "0.31.0"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+
+[profile.release]
+strip = true
+opt-level = "z"  # optimize for size
+lto = true
+codegen-units = 1
+panic = "abort"

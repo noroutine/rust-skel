@@ -1,0 +1,11 @@
+[build]
+# Use the host's Docker platform
+# default-target = "aarch64-unknown-linux-musl"
+
+[target.x86_64-unknown-linux-musl]
+# Force cross-compilation even on mismatched hosts
+pre-build = []
+
+[target.aarch64-unknown-linux-musl]
+# Native compilation for ARM64
+pre-build = []
