@@ -1,16 +1,39 @@
 use std::time::Instant;
 
+use axum::Router;
+use axum::response::Html;
+use axum::routing::get;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry::{KeyValue, global};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::Resource;
-use tracing::{Instrument, Level, info, span};
+use tracing::{info, instrument, Level};
+
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[instrument]
+async fn root() -> Html<&'static str> {
+    let start = Instant::now();
+
+    let execution_time = start.elapsed();
+    let nanos = execution_time.as_nanos();
+    let formatted_time = match nanos {
+        0..=999 => format!("{}ns", nanos),
+        1_000..=999_999 => format!("{:.1}μs", nanos as f64 / 1_000.0),
+        1_000_000..=999_999_999 => format!("{:.1}ms", nanos as f64 / 1_000_000.0),
+        _ => format!("{:.2}s", execution_time.as_secs_f64()),
+    };
+
+    info!("Done in {}", formatted_time);
+
+    Html("<h1>Hello, Axum!</h1>")
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -67,27 +90,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         .with(console_subscriber::ConsoleLayer::builder().spawn()) // tokio console
         .with(tracing_subscriber::fmt::layer()) // Layer 1: Console formatting
         .with(tracing_opentelemetry::layer().with_tracer(tracer)) // Layer 2: OTLP export
-        .with(EnvFilter::from_default_env()) // Reads RUST_LOG env var
+        .with({
+            let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+            // filter.add_directive("tower_http=debug".parse().unwrap())
+            filter
+        })
         .init();
 
-    async {
-        let start = Instant::now();
+    let app = Router::new()
+        .route("/", get(root))
+        // Add tracing middleware - this automatically traces all requests with explicit tracing level
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_request(DefaultOnRequest::new().level(Level::DEBUG))
+                .on_response(DefaultOnResponse::new().level(Level::DEBUG)),
+        );
 
-        println!("Hello!");
+    let listener = tokio::net::TcpListener::bind("[::]:3000").await.unwrap();
 
-        let execution_time = start.elapsed();
-        let nanos = execution_time.as_nanos();
-        let formatted_time = match nanos {
-            0..=999 => format!("{}ns", nanos),
-            1_000..=999_999 => format!("{:.1}μs", nanos as f64 / 1_000.0),
-            1_000_000..=999_999_999 => format!("{:.1}ms", nanos as f64 / 1_000_000.0),
-            _ => format!("{:.2}s", execution_time.as_secs_f64()),
-        };
+    println!("Server running on http://[::]:3000");
 
-        info!("Done in {}", formatted_time);
-    }
-    .instrument(span!(Level::INFO, "hello",))
-    .await;
+    axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }
