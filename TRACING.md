@@ -1,3 +1,18 @@
+# Flamegraph
+
+You need XCode
+```bash
+cargo install flamegraph
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+cargo flamegraph --dev # for release you need to leave debug symbols in Cargo.toml
+
+# in another terminal
+
+wrk -t12 -c400 -d30s http://localhost:3000/
+```
+
+Tracing accounted for ~5k rps drop (86k -> 81k) with a simple static html handler
+
 # Run jaeger
 
 ```bash

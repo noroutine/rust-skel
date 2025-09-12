@@ -35,7 +35,7 @@ async fn root() -> Html<&'static str> {
     Html("<h1>Hello, Axum!</h1>")
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     // Initialize OTLP exporter using gRPC (Tonic)
     // 1. OTLP Exporter - The Sender
