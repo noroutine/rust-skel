@@ -2252,8 +2252,10 @@ checksum = "5360edd490ec8dee9fedfc6a9fd83ac2f01b3e1996e3261b9ad18a61971fe064"
 dependencies = [
  "actix-web",
  "mutually_exclusive_features",
+ "opentelemetry",
  "pin-project",
  "tracing",
+ "tracing-opentelemetry",
  "uuid",
 ]
 
