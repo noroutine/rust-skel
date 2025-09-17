@@ -1778,8 +1778,10 @@ name = "rust-skel"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "anyhow",
  "bytes",
  "console-subscriber",
+ "futures-util",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
